@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CARTA — 영상 레퍼런스 아카이브</title>
+<meta name="description" content="모션그래픽·영화·애니메이션 레퍼런스를 GIF로 큐레이션합니다" />
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <span class="brand">CARTA</span>
+  </div>
+</header>
+
+<main class="wrap-wide">
+  <section class="intro">
+    <p class="intro-label">Curated Inspirations</p>
+  </section>
+
+  <section id="board" class="board">
+    <p class="loading-msg">불러오는 중 —</p>
+  </section>
+</main>
+
+<template id="card-template">
+  <a class="board-item" target="_blank" rel="noreferrer">
+    <div class="board-media"></div>
+    <div class="board-body">
+      <h2 class="board-title"></h2>
+      <p class="board-author"></p>
+      <div class="board-meta-row">
+        <span class="board-category"></span>
+        <div class="board-keywords"></div>
+      </div>
+      <p class="board-desc"></p>
+    </div>
+  </a>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
