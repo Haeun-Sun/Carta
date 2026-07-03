@@ -17,6 +17,7 @@
 <header class="site-header">
   <div class="wrap header-inner">
     <span class="brand">CARTA</span>
+    <button id="admin-toggle" class="admin-toggle" type="button">관리자</button>
   </div>
 </header>
 
@@ -32,6 +33,7 @@
 
 <template id="card-template">
   <a class="board-item" target="_blank" rel="noreferrer">
+    <button class="board-delete" type="button" title="삭제">✕</button>
     <div class="board-media"></div>
     <div class="board-body">
       <h2 class="board-title"></h2>

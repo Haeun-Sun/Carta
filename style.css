@@ -30,8 +30,19 @@ a { color: var(--text); text-decoration: none; }
 
 /* Header */
 .site-header { border-bottom: 1px solid var(--line); }
-.header-inner { padding: 20px 28px; }
+.header-inner {
+  padding: 20px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
 .brand { font-weight: 700; font-size: 16px; letter-spacing: 0.02em; }
+
+.admin-toggle {
+  font-family: var(--font); font-size: 12px; color: var(--muted);
+  background: none; border: 1px solid var(--line); padding: 5px 10px;
+  cursor: pointer;
+}
+.admin-toggle:hover { border-color: var(--text); color: var(--text); }
+.admin-toggle.is-active { border-color: var(--text); color: var(--text); font-weight: 700; }
 
 /* Intro */
 .intro { padding: 40px 0 24px; }
@@ -50,12 +61,23 @@ a { color: var(--text); text-decoration: none; }
 .loading-msg { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 80px 0; }
 
 .board-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
   overflow: hidden;
   height: 100%;
 }
+
+.board-delete {
+  display: none; /* 관리자 모드일 때만 body.admin-mode 아래에서 보임 */
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 24px; height: 24px; line-height: 1;
+  background: #ffffff; color: var(--text); border: 1px solid var(--line);
+  font-size: 13px; cursor: pointer;
+}
+.board-delete:hover { background: var(--text); color: #fff; border-color: var(--text); }
+body.admin-mode .board-delete { display: block; }
 
 .board-media {
   width: 100%;

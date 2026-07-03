@@ -1,13 +1,82 @@
+const ADMIN_SESSION_KEY = "carta_admin_password";
+
+let supabaseClient = null;
+
+function getClient() {
+  if (!supabaseClient) {
+    supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+  }
+  return supabaseClient;
+}
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str ?? "";
   return div.innerHTML;
 }
 
+function isAdminMode() {
+  return Boolean(sessionStorage.getItem(ADMIN_SESSION_KEY));
+}
+
+function setAdminMode(active) {
+  document.body.classList.toggle("admin-mode", active);
+  const btn = document.getElementById("admin-toggle");
+  btn.textContent = active ? "관리자 모드 끄기" : "관리자";
+  btn.classList.toggle("is-active", active);
+}
+
+async function handleAdminToggleClick() {
+  if (isAdminMode()) {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    setAdminMode(false);
+    return;
+  }
+
+  const input = window.prompt("관리자 비밀번호를 입력하세요");
+  if (!input) return;
+
+  const { data, error } = await getClient().rpc("verify_admin_password", { input_password: input });
+
+  if (error || !data) {
+    window.alert("비밀번호가 올바르지 않습니다.");
+    return;
+  }
+
+  sessionStorage.setItem(ADMIN_SESSION_KEY, input);
+  setAdminMode(true);
+}
+
+async function handleDeleteClick(event, item) {
+  event.preventDefault(); // <a> 태그 안 버튼이라, 클릭해도 페이지 이동 안 되게 막음
+  event.stopPropagation();
+
+  const ok = window.confirm(`"${item.title}"\n이 레퍼런스를 삭제할까요? 되돌릴 수 없습니다.`);
+  if (!ok) return;
+
+  const password = sessionStorage.getItem(ADMIN_SESSION_KEY);
+  const { error } = await getClient().rpc("delete_reference", {
+    target_id: item.id,
+    input_password: password
+  });
+
+  if (error) {
+    window.alert("삭제 실패: 비밀번호가 만료됐거나 올바르지 않습니다. 관리자 모드를 다시 켜주세요.");
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    setAdminMode(false);
+    return;
+  }
+
+  event.currentTarget.closest(".board-item").remove();
+}
+
 function renderCard(item) {
   const tpl = document.getElementById("card-template").content.cloneNode(true);
   const link = tpl.querySelector(".board-item");
   link.href = item.source_url;
+
+  const deleteBtn = tpl.querySelector(".board-delete");
+  deleteBtn.addEventListener("click", (e) => handleDeleteClick(e, item));
 
   const media = tpl.querySelector(".board-media");
   if (item.thumbnail_url) {
@@ -60,8 +129,7 @@ async function loadBoard() {
     return;
   }
 
-  const client = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
-  const { data, error } = await client
+  const { data, error } = await getClient()
     .from("references")
     .select("*")
     .order("created_at", { ascending: false });
@@ -80,4 +148,6 @@ async function loadBoard() {
   data.forEach((item) => board.appendChild(renderCard(item)));
 }
 
+document.getElementById("admin-toggle").addEventListener("click", handleAdminToggleClick);
+setAdminMode(isAdminMode());
 loadBoard();
