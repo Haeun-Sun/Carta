@@ -1,5 +1,5 @@
 import { getServiceClient } from "./lib/supabase.mjs";
-import { fetchYoutubeCandidates, fetchGlobalSearchCandidates } from "./lib/youtube.mjs";
+import { fetchYoutubeCandidates } from "./lib/youtube.mjs";
 import { fetchVimeoCandidates, fetchStaffPicksCandidates } from "./lib/vimeo.mjs";
 import { fetchCurationFeedCandidates } from "./lib/feeds.mjs";
 import { rankCandidates } from "./lib/ranking.mjs";
@@ -7,8 +7,9 @@ import { analyzeReference } from "./lib/analyze.mjs";
 import { makeGifThumbnail } from "./lib/gif.mjs";
 
 const MAX_PER_RUN = Number(process.env.MAX_PER_RUN ?? 5);
-// AI가 매기는 10점 만점 퀄리티 점수의 통과 기준. 스튜디오 화이트리스트/Staff Picks
-// 출처가 아닌 후보는 이 점수를 넘겨야 최종 저장됩니다.
+// AI 퀄리티 게이트 기준점. 현재 자동 수집 소스는 모두 신뢰 소스라 게이트를 타지
+// 않지만, 수동 추가(manual-add) 등 trustedQuality가 아닌 후보가 들어올 경우를
+// 대비해 로직은 남겨둡니다.
 const QUALITY_THRESHOLD = Number(process.env.QUALITY_THRESHOLD ?? 6);
 
 async function main() {
@@ -17,17 +18,16 @@ async function main() {
   const { data: existingUrls } = await supabase.from("references").select("source_url");
   const seen = new Set((existingUrls ?? []).map((r) => r.source_url));
 
-  const [studioYoutube, studioVimeo, staffPicks, curationFeeds, globalSearch] = await Promise.all([
+  const [studioYoutube, studioVimeo, staffPicks, curationFeeds] = await Promise.all([
     fetchYoutubeCandidates(), // 큐레이션된 스튜디오 채널 - 최신작+역대 인기작 (신뢰 소스)
     fetchVimeoCandidates(), // 큐레이션된 스튜디오 채널 - 최신작+역대 인기작 (신뢰 소스)
     fetchStaffPicksCandidates(), // Vimeo 에디터 큐레이션 - 최신+역대 인기 (신뢰 소스)
-    fetchCurationFeedCandidates(), // Motionographer / The FWA RSS (신뢰 소스)
-    fetchGlobalSearchCandidates() // 화이트리스트 밖 전세계 검색 - 최신+역대 인기 (AI 퀄리티 게이트 필요)
+    fetchCurationFeedCandidates() // Motionographer / The FWA RSS (신뢰 소스)
   ]);
 
-  // 여러 소스/쿼리가 같은 영상을 중복으로 반환할 수 있어 URL 기준으로 한 번 더 정리합니다.
+  // 여러 소스가 같은 영상을 중복으로 반환할 수 있어 URL 기준으로 한 번 더 정리합니다.
   const byUrl = new Map();
-  for (const c of [...studioYoutube, ...studioVimeo, ...staffPicks, ...curationFeeds, ...globalSearch]) {
+  for (const c of [...studioYoutube, ...studioVimeo, ...staffPicks, ...curationFeeds]) {
     if (!seen.has(c.sourceUrl) && !byUrl.has(c.sourceUrl)) byUrl.set(c.sourceUrl, c);
   }
   const fresh = [...byUrl.values()];
