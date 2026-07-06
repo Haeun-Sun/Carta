@@ -1,0 +1,180 @@
+# CLAUDE.md — CARTA 프로젝트 안내 (Claude Code용)
+
+이 파일은 Claude Code가 세션을 시작할 때마다 먼저 읽는 온보딩 문서입니다.
+프로젝트의 목적, 구조, 지금까지 내린 결정과 그 이유, 배포 규칙, 함정들을 정리했습니다.
+
+> 사용자는 코딩 비전공자입니다. 설명은 쉬운 한국어로, 전문 용어는 풀어서 해주세요.
+> 터미널 명령이나 파일 수정을 제안할 때는 "무엇을/왜" 하는지 먼저 한 줄로 알려주세요.
+
+---
+
+## 1. 프로젝트 개요
+
+**CARTA** — 전세계 최상위 티어 스튜디오의 고퀄리티 영상 레퍼런스를 자동으로 모아
+GIF 썸네일 + AI 코멘트 + 키워드와 함께 보드형 그리드로 보여주는 사이트.
+
+- 대상: 모션그래픽 / VFX / 애니메이션 / 미디어아트 / 뮤직비디오 / 브랜드 필름
+- 하루 1회 자동 수집, 실행마다 최대 5개(`MAX_PER_RUN`)까지 큐레이션
+- 라이브 사이트: `carta-haeunsun.vercel.app`
+- GitHub 저장소: `Haeun-Sun/Carta`
+
+---
+
+## 2. 기술 스택 & 아키텍처
+
+순수 정적 프론트엔드 + Node 스크립트(자동 수집) + Supabase(DB/스토리지) 조합.
+빌드 도구·프레임워크 없음. 프론트엔드는 그냥 정적 파일.
+
+```
+[수집 소스 — 전부 "신뢰 소스", AI 게이트 없이 통과]
+스튜디오 화이트리스트(studios.mjs)  → YouTube/Vimeo 채널별 "최신작+역대 인기작"
+Vimeo Staff Picks                   → 에디터 큐레이션 "최신+역대 인기"
+큐레이션 매체 RSS(Motionographer/FWA) → 본문의 Vimeo/YouTube 링크 추출
+
+        ↓ URL 중복 제거 → 쇼츠 제외 → 랭킹(최신성+인기도) → 최대 N개
+        ┬→ yt-dlp+ffmpeg로 앞 3초 GIF 생성 → Supabase Storage 업로드
+        └→ AI(OpenAI 우선, 없으면 Anthropic)로 코멘트+키워드+분류 생성
+        → Supabase `references` 테이블에 저장
+
+index.html + app.js → Supabase 읽어서 CSS Grid 보드로 렌더링
+```
+
+### 파일 구조
+- `index.html` / `style.css` / `app.js` — 프론트엔드 (보드 렌더링 + 관리자 삭제 UI)
+- `config.js` — Supabase URL + anon(publishable) key. **공개돼도 되는 값만** 넣음.
+- `scripts/collect.mjs` — 자동 수집 파이프라인 진입점
+- `scripts/manual-add.mjs` — 수동으로 레퍼런스 1개 추가하는 CLI
+- `scripts/lib/studios.mjs` — **스튜디오 화이트리스트 (가장 자주 수정하는 파일)**
+- `scripts/lib/youtube.mjs` — YouTube 채널 수집 (핸들 또는 channelId 지원)
+- `scripts/lib/vimeo.mjs` — Vimeo 사용자 채널 + Staff Picks 수집
+- `scripts/lib/feeds.mjs` — Motionographer/The FWA RSS 파싱 (라이브러리 없이 정규식)
+- `scripts/lib/analyze.mjs` — AI 코멘트/키워드/퀄리티점수/분류 생성
+- `scripts/lib/ranking.mjs` — 최신성+인기도 가중합 점수
+- `scripts/lib/gif.mjs` — yt-dlp+ffmpeg로 GIF 생성 후 Storage 업로드
+- `scripts/lib/supabase.mjs` — service_role 클라이언트
+- `supabase/schema.sql` — `references` 테이블 스키마
+- `supabase/admin.sql` — 관리자 삭제용 비밀번호 함수
+- `.github/workflows/daily-archive.yml` — 매일 자동 실행 (cron)
+
+---
+
+## 3. 지금까지 내린 핵심 결정 (그리고 이유)
+
+작업할 때 이 결정들을 뒤집지 마세요. 사용자가 오래 고민해서 정한 방향입니다.
+
+1. **전세계 키워드 검색은 제거했다.** 예전에 "motion graphics reel" 같은 키워드로
+   유튜브 전체를 검색했는데, 아무나 올린 저퀄 영상이 섞여 들어와서 퀄리티가 나빴음.
+   지금은 **검증된 신뢰 소스 3개(화이트리스트 + Staff Picks + 큐레이션 RSS)만** 사용.
+   → 다시 키워드 검색을 추가하자는 방향은 사용자가 명시적으로 거부했음.
+
+2. **화이트리스트는 "BUCK·Tendril 티어"가 기준.** STASH/Motionographer/Vimeo
+   Staff Picks 같은 업계 큐레이션에 반복 등장 + 공식 채널 실재 확인된 곳만 넣음.
+   스튜디오 추가 요청이 오면 **반드시 웹에서 실제 채널이 있는지, 업로드 콘텐츠가
+   있는지 확인한 뒤** 넣을 것. (과거에 UVA를 넣었다가 "no videos"라 뺀 적 있음)
+
+3. **최신작뿐 아니라 예전 명작도 올라와야 한다.** 각 소스에서 "최신순"과
+   "역대 인기순(조회수)"을 둘 다 가져옴. 랭킹도 최신성 급감 대신 30일에 걸쳐
+   완만히 감소 + 인기도 비중을 키워서, 오래된 대표작도 경쟁 가능하게 조정함.
+
+4. **쇼츠는 제외.** 60초 미만 또는 `#shorts` 태그가 붙은 영상은 자동 필터링.
+
+5. **카드 정보 순서(고정):** 제목(1줄, 넘치면 말줄임) → 제작 스튜디오(없으면 공백)
+   → 분류/키워드 → 코멘트. 보드는 masonry가 아니라 **균일한 사이즈의 CSS Grid**.
+
+6. **AI는 OpenAI(gpt-4o-mini) 우선, 없으면 Anthropic.** 사용자가 ChatGPT 유료라
+   `OPENAI_API_KEY`를 씀. 지금 자동 수집 소스는 전부 신뢰 소스라 AI 퀄리티 게이트는
+   실질적으로 안 타지만, 수동 추가 등 대비해 로직은 남겨둠(`QUALITY_THRESHOLD`).
+
+7. **관리자 삭제 기능.** 로그인 시스템 없이 Supabase의 비밀번호 보호 함수
+   (`verify_admin_password`, `delete_reference`)로 구현. 사이트 우상단 "관리자"
+   버튼 → 비밀번호 → 카드마다 ✕ 버튼. 비밀번호는 `admin.sql`에 설정.
+
+---
+
+## 4. 배포 규칙 (중요)
+
+- **수집 로직 변경(스튜디오 추가 등) = GitHub만 바꾸면 됨.** Supabase/Vercel 안 건드림.
+- **DB 컬럼이 바뀔 때만** Supabase SQL Editor에서 `alter table` 실행 필요.
+- 프론트엔드(index/style/app) 변경도 GitHub push하면 Vercel이 자동 재배포.
+- 변경 후 확인: GitHub → Actions 탭 → "Curate references" → Run workflow (즉시 실행),
+  또는 매일 한국시간 오전 6시(cron `0 21 * * *`, UTC 기준) 자동 실행.
+
+### 코드 수정 후 항상 할 것
+```bash
+# 모든 스크립트 문법 검사
+for f in scripts/collect.mjs scripts/manual-add.mjs scripts/lib/*.mjs app.js; do
+  node --check "$f" || echo "FAIL $f"
+done
+```
+그다음 git add/commit/push. (사용자에게 커밋 메시지 보여주고 승인받은 뒤 push)
+
+---
+
+## 5. 함정 (과거에 실제로 터진 문제들)
+
+- **Node 버전은 반드시 22 이상.** Node 20은 `@supabase/supabase-js`가
+  "Node.js 20 detected without native WebSocket support" 에러를 냄.
+  `.github/workflows/daily-archive.yml`에 `node-version: 22`로 지정돼 있음.
+- **폴더 두 겹 주의.** 예전에 저장소에 `motion-archive-html (1)/motion-archive-html/`
+  식으로 중첩돼서 Vercel 404, Actions 경로 오류가 남. 지금은 저장소 루트에 파일이
+  바로 있는 구조. 이 구조를 유지할 것.
+- **YouTube API 할당량.** 채널당 검색 2회(최신+인기) × 100 units. 현재 YouTube/channelId
+  방식 채널 약 16곳이라 하루 3,200 units 정도(무료 한도 10,000). 채널을 대량 추가하면
+  할당량을 초과할 수 있으니 주의.
+- **핸들이 불확실한 YouTube 채널은 channelId를 직접 지정.** `studios.mjs`에서
+  `{ name, category, channelId: "UC..." }` 형태 지원 (2026-07-06에 `youtube.mjs`에
+  실제로 구현함 — 그 전엔 문서에만 있고 코드엔 없었음). teamLab, d'strict, Lampers가
+  이 방식으로 들어가 있음. Easywith는 공식 Vimeo 채널(`vimeo.com/easywith`)이 확인돼서
+  vimeo 방식으로 등록함.
+- **RSS의 The FWA는 피드 경로가 불안정.** 실패해도 전체가 멈추지 않게 예외 처리됨.
+  로그에 "The FWA 요청 실패"만 뜨고 나머지는 정상 동작.
+
+---
+
+## 6. 자주 하는 작업: 스튜디오 추가
+
+`scripts/lib/studios.mjs`의 `STUDIOS` 배열에 항목 추가. 형식:
+```js
+{ name: "표시이름", category: "분류", vimeo: "vimeo사용자명" }
+{ name: "표시이름", category: "분류", youtube: "@핸들" }
+{ name: "표시이름", category: "분류", channelId: "UC로시작하는채널ID" } // 핸들 불확실할 때
+```
+- 분류 예: "모션그래픽 스튜디오", "VFX 스튜디오", "애니메이션 스튜디오",
+  "미디어아트", "뮤직비디오 프로덕션", "테크 기업" 등 (카드 배지로 표시됨)
+- **추가 전 반드시 웹 검색으로 채널 실재 + 업로드 콘텐츠 유무 확인.**
+- 잘못된 핸들이어도 프로그램은 죽지 않고 해당 항목만 건너뜀(로그 경고).
+
+### 현재 화이트리스트 (총 47곳, 2026-07-06 기준 실제 코드와 동기화됨)
+- 모션그래픽(20): BUCK, Gentleman Scholar, Giant Ant, ManvsMachine, Psyop, Elastic,
+  Trollbäck+Company, Ordinary Folk, Golden Wolf, Tendril, FutureDeluxe, Oddfellows,
+  Aggressive, Brand New School, Lobo, nerdo, Art&Graft, WOW inc.(일), BYTS(한),
+  SUPER VERY MORE(한), 2GREY(한), swim(한)
+- VFX(7): The Mill, Framestore, Territory Studio, Sehsucht, Ars Thanea, Blur Studio, ILM
+- 애니메이션(6): LAIKA, Cartoon Saloon, Pixar, Passion Pictures, Disney Animation,
+  Sony Pictures Animation
+- 영화사/스트리밍(1): Netflix
+- 미디어아트(6): teamLab(일, channelId 방식), d'strict(한, channelId 방식),
+  Lampers(한, channelId 방식), Easywith(한), Universal Everything(영), NONOTAK STUDIO(프)
+- 뮤직비디오(1): Partizan(프)
+- 테크(4): Apple, Google, Microsoft, Samsung
+
+**제외/보류한 후보 (실재하지만 이유가 있어 뺌, 다시 검토 시 참고):**
+- DreamWorks Animation — 유튜브 채널이 여러 개로 파편화(Universal 인수 이후)돼 있어 정확한 대표 채널을 특정 못 함
+- Nexus Studios — 유튜브 핸들이 불안정(자동생성 형태)하고 혼동되는 동명 채널 존재
+- Blinkink — 실제 영상이 `blinkprods`(Blink 그룹 통합 계정) 안에 있어서, 등록하면 애니메이션 외 실사 광고 영상까지 섞여 들어옴 (현재 코드는 특정 채널만 골라오는 기능이 없음)
+- Buda.tv — Psyop 패밀리에 합류(흡수)돼서 Psyop 항목으로 이미 커버됨, 중복 방지 차 제외
+
+---
+
+## 7. 환경변수 (GitHub Actions Secrets)
+
+자동 수집 스크립트가 쓰는 값들 (GitHub 저장소 Settings → Secrets and variables → Actions):
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — DB 쓰기용
+- `YOUTUBE_API_KEY` — YouTube Data API v3
+- `VIMEO_ACCESS_TOKEN` — Vimeo API (Unauthenticated/public 스코프)
+- `OPENAI_API_KEY` — AI 코멘트 생성 (선택, 없으면 원본 설명 사용)
+- (`ANTHROPIC_API_KEY` — OpenAI 대신 쓸 경우, 선택)
+
+옵션: `MAX_PER_RUN`(기본 5), `QUALITY_THRESHOLD`(기본 6)
+
+프론트엔드 `config.js`에는 공개용 anon key만. service_role 키는 절대 넣지 말 것.

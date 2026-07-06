@@ -24,9 +24,21 @@ export const STUDIOS = [
   { name: "Ordinary Folk", category: "모션그래픽 스튜디오", vimeo: "ordinaryfolk" },
   { name: "Golden Wolf", category: "모션그래픽 스튜디오", vimeo: "goldenwolf" },
 
+  { name: "Tendril", category: "모션그래픽 스튜디오", vimeo: "tendril" }, // 미국, 뉴욕
+  { name: "FutureDeluxe", category: "모션그래픽 스튜디오", vimeo: "futuredeluxe" }, // 영국, 런던
+  { name: "Oddfellows", category: "모션그래픽 스튜디오", vimeo: "oddfellows" }, // 미국, 포틀랜드
+  { name: "Aggressive", category: "모션그래픽 스튜디오", vimeo: "aggressive" }, // 프랑스
+  { name: "Brand New School", category: "모션그래픽 스튜디오", vimeo: "brandnewschool" }, // 미국, LA
+  { name: "Lobo", category: "모션그래픽 스튜디오", vimeo: "lobocx" }, // 브라질
+  { name: "nerdo", category: "모션그래픽 스튜디오", vimeo: "nerdo" }, // 이탈리아
+  { name: "Art&Graft", category: "모션그래픽 스튜디오", vimeo: "artandgraft" }, // 영국, 런던
+
   // 모션그래픽 스튜디오 — 아시아
   { name: "WOW inc.", category: "모션그래픽 스튜디오", vimeo: "wowinc" }, // 일본, 도쿄/센다이
   { name: "Bright Young Things (Studio BYTS)", category: "모션그래픽 스튜디오", vimeo: "byts" }, // 대한민국, 서울
+  { name: "SUPER VERY MORE", category: "모션그래픽 스튜디오", vimeo: "superverymore" }, // 대한민국, 서울
+  { name: "2GREY", category: "모션그래픽 스튜디오", vimeo: "2grey" }, // 대한민국, 서울
+  { name: "swim", category: "모션그래픽 스튜디오", vimeo: "swimseoul" }, // 대한민국, 서울
 
   // VFX 스튜디오 — 전세계
   { name: "The Mill", category: "VFX 스튜디오", vimeo: "themill" }, // 영국/미국
@@ -41,10 +53,27 @@ export const STUDIOS = [
   { name: "LAIKA", category: "애니메이션 스튜디오", youtube: "@LAIKAStudios" }, // 미국
   { name: "Cartoon Saloon", category: "애니메이션 스튜디오", youtube: "@CartoonSaloonStudio" }, // 아일랜드
   { name: "Pixar", category: "애니메이션 스튜디오", youtube: "@Pixar" }, // 미국
+  { name: "Passion Pictures", category: "애니메이션 스튜디오", vimeo: "passionpictures" }, // 영국
+  { name: "Disney Animation", category: "애니메이션 스튜디오", youtube: "@DisneyAnimation" }, // 미국
+  { name: "Sony Pictures Animation", category: "애니메이션 스튜디오", youtube: "@SonyAnimation" }, // 미국
+
+  // 영화사/스트리밍
+  { name: "Netflix", category: "영화사/스트리밍", youtube: "@Netflix" },
+
+  // 미디어아트
+  { name: "teamLab", category: "미디어아트", channelId: "UCYab90rmhVPfbrnmN-Zmwhg" }, // 일본
+  { name: "d'strict", category: "미디어아트", channelId: "UC9NTI-FPKhzb_OYBwgbv3kw" }, // 대한민국
+  { name: "Lampers", category: "미디어아트", channelId: "UCeLH31l_NiejEVn_bRkO-QA" }, // 대한민국
+  { name: "Easywith", category: "미디어아트", vimeo: "easywith" }, // 대한민국
+  { name: "Universal Everything", category: "미디어아트", vimeo: "universaleverything" }, // 영국
+  { name: "NONOTAK STUDIO", category: "미디어아트", vimeo: "nonotak" }, // 프랑스
 
   // 뮤직비디오 프로덕션
   { name: "Partizan", category: "뮤직비디오 프로덕션", youtube: "@PartizanOfficial" }, // 프랑스/전세계
 
   // 테크/IT 기업 (고퀄리티 제품·브랜드 영상)
-  { name: "Apple", category: "테크 기업", youtube: "@Apple" } // 미국
+  { name: "Apple", category: "테크 기업", youtube: "@Apple" }, // 미국
+  { name: "Google", category: "테크 기업", youtube: "@Google" }, // 미국
+  { name: "Microsoft", category: "테크 기업", youtube: "@Microsoft" }, // 미국
+  { name: "Samsung", category: "테크 기업", youtube: "@Samsung" } // 대한민국
 ];

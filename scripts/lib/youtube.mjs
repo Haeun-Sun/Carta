@@ -62,7 +62,7 @@ function toCandidate(item, studio) {
 }
 
 async function fetchChannelVideos(studio, apiKey) {
-  const channelId = await resolveChannelId(studio.youtube, apiKey);
+  const channelId = studio.channelId || (await resolveChannelId(studio.youtube, apiKey));
   if (!channelId) {
     console.warn(`[youtube] 채널을 찾을 수 없어 건너뜁니다: ${studio.name} (${studio.youtube})`);
     return [];
@@ -103,7 +103,7 @@ export async function fetchYoutubeCandidates() {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) return [];
 
-  const youtubeStudios = STUDIOS.filter((s) => s.youtube);
+  const youtubeStudios = STUDIOS.filter((s) => s.youtube || s.channelId);
   const results = await Promise.all(
     youtubeStudios.map((studio) =>
       fetchChannelVideos(studio, apiKey).catch((err) => {
