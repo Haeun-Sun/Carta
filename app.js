@@ -22,9 +22,8 @@ function isAdminMode() {
 function setAdminMode(active) {
   document.body.classList.toggle("admin-mode", active);
   const btn = document.getElementById("admin-toggle");
-  const label = active ? "관리자 모드 끄기" : "관리자";
-  btn.title = label;
-  btn.setAttribute("aria-label", label);
+  // title(호버 툴팁)은 HTML의 "No Bunnies Allowed!"를 유지하고, 상태는 aria-label로만 반영
+  btn.setAttribute("aria-label", active ? "관리자 모드 끄기" : "관리자");
   btn.classList.toggle("is-active", active);
 }
 

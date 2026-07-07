@@ -32,13 +32,16 @@ a { color: var(--text); text-decoration: none; }
 .site-header { border-bottom: 1px solid var(--line); }
 .header-inner {
   padding: 20px 28px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: flex-end; justify-content: space-between;
 }
-.brand { font-weight: 700; font-size: 16px; letter-spacing: 0.02em; }
+.brand {
+  display: inline-flex; align-items: flex-end; justify-content: flex-start;
+  line-height: 0;
+}
 
 .admin-toggle {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; padding: 0;
+  width: 36px; height: 36px; padding: 0;
   background: none; border: none; border-radius: 50%;
   line-height: 0; cursor: pointer;
 }
