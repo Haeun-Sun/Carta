@@ -22,7 +22,9 @@ function isAdminMode() {
 function setAdminMode(active) {
   document.body.classList.toggle("admin-mode", active);
   const btn = document.getElementById("admin-toggle");
-  btn.textContent = active ? "관리자 모드 끄기" : "관리자";
+  const label = active ? "관리자 모드 끄기" : "관리자";
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
   btn.classList.toggle("is-active", active);
 }
 
@@ -70,10 +72,71 @@ async function handleDeleteClick(event, item) {
   event.currentTarget.closest(".board-item").remove();
 }
 
+/**
+ * source_url(유튜브/비메오 시청 페이지 링크)을 팝업에 바로 넣을 수 있는
+ * embed용 iframe 주소로 변환합니다. 알 수 없는 형식이면 null을 반환합니다.
+ */
+function toEmbedUrl(sourceUrl) {
+  let url;
+  try {
+    url = new URL(sourceUrl);
+  } catch {
+    return null;
+  }
+
+  if (url.hostname.includes("youtu.be")) {
+    const id = url.pathname.slice(1);
+    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : null;
+  }
+  if (url.hostname.includes("youtube.com")) {
+    const id = url.searchParams.get("v") ?? url.pathname.match(/\/shorts\/([\w-]+)/)?.[1];
+    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : null;
+  }
+  if (url.hostname.includes("vimeo.com")) {
+    const id = url.pathname.match(/(\d+)/)?.[1];
+    return id ? `https://player.vimeo.com/video/${id}?autoplay=1` : null;
+  }
+  return null;
+}
+
+function openVideoModal(item) {
+  const embedUrl = toEmbedUrl(item.source_url);
+  if (!embedUrl) {
+    window.open(item.source_url, "_blank", "noopener");
+    return;
+  }
+
+  const modal = document.getElementById("video-modal");
+  const frame = modal.querySelector(".video-modal-frame");
+  frame.innerHTML = "";
+
+  const iframe = document.createElement("iframe");
+  iframe.src = embedUrl;
+  iframe.title = item.title;
+  iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
+  iframe.allowFullscreen = true;
+  frame.appendChild(iframe);
+
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function closeVideoModal() {
+  const modal = document.getElementById("video-modal");
+  if (modal.hidden) return;
+  modal.hidden = true;
+  modal.querySelector(".video-modal-frame").innerHTML = ""; // 재생 중지
+  document.body.classList.remove("modal-open");
+}
+
 function renderCard(item) {
   const tpl = document.getElementById("card-template").content.cloneNode(true);
   const link = tpl.querySelector(".board-item");
   link.href = item.source_url;
+  link.addEventListener("click", (e) => {
+    e.preventDefault(); // 새 탭 이동 대신 팝업으로 바로 재생 (휠클릭/우클릭으로 새 탭 열기는 그대로 가능)
+    openVideoModal(item);
+  });
 
   const deleteBtn = tpl.querySelector(".board-delete");
   deleteBtn.addEventListener("click", (e) => handleDeleteClick(e, item));
@@ -149,5 +212,11 @@ async function loadBoard() {
 }
 
 document.getElementById("admin-toggle").addEventListener("click", handleAdminToggleClick);
+document.getElementById("video-modal-close").addEventListener("click", closeVideoModal);
+document.querySelector(".video-modal-backdrop").addEventListener("click", closeVideoModal);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeVideoModal();
+});
+
 setAdminMode(isAdminMode());
 loadBoard();
