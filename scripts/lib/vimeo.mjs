@@ -61,9 +61,9 @@ export async function fetchStaffPicksCandidates(daysBack = 5) {
   return results;
 }
 
-async function fetchUserVideos(studio, token, cutoff) {
+async function fetchUserVideosBySort(studio, token, sort) {
   const url = new URL(`https://api.vimeo.com/users/${studio.vimeo}/videos`);
-  url.searchParams.set("sort", "date");
+  url.searchParams.set("sort", sort);
   url.searchParams.set("direction", "desc");
   url.searchParams.set("per_page", "10");
   url.searchParams.set(
@@ -84,11 +84,28 @@ async function fetchUserVideos(studio, token, cutoff) {
   }
 
   const json = await res.json();
-  const results = [];
+  return json.data ?? [];
+}
 
-  for (const v of json.data ?? []) {
-    const publishedAt = v.release_time ?? v.created_time;
-    if (new Date(publishedAt).getTime() < cutoff) continue;
+/**
+ * "최신작"(sort=date)과 "역대 인기작"(sort=plays)을 함께 가져옵니다.
+ * YouTube 수집과 동일하게 날짜 제한을 두지 않아, 예전 대표작도 랭킹에서
+ * 인기도로 경쟁할 수 있습니다(오래된 후보는 ranking.mjs의 최신성 점수가
+ * 자연히 낮아지고, 이미 저장된 영상은 collect.mjs의 URL 중복 체크로 걸러집니다).
+ */
+async function fetchUserVideos(studio, token) {
+  const [recent, popular] = await Promise.all([
+    fetchUserVideosBySort(studio, token, "date"),
+    fetchUserVideosBySort(studio, token, "plays")
+  ]);
+
+  const byUri = new Map();
+  for (const v of [...recent, ...popular]) {
+    if (!byUri.has(v.uri)) byUri.set(v.uri, v);
+  }
+
+  const results = [];
+  for (const v of byUri.values()) {
     if (isLikelyShort(v.name, v.description ?? "", v.duration ?? 0)) continue;
 
     results.push({
@@ -99,7 +116,7 @@ async function fetchUserVideos(studio, token, cutoff) {
       category: studio.category,
       trustedQuality: true, // 큐레이션된 스튜디오 목록 출처는 AI 퀄리티 게이트를 건너뜁니다
       thumbnailUrl: v.pictures?.sizes?.at(-1)?.link,
-      publishedAt,
+      publishedAt: v.release_time ?? v.created_time,
       viewCount: v.stats?.plays ?? 0,
       description: v.description ?? ""
     });
@@ -108,20 +125,18 @@ async function fetchUserVideos(studio, token, cutoff) {
 }
 
 /**
- * studios.mjs에 등록된 신뢰 Vimeo 사용자(스튜디오)들의 최근 업로드만 수집합니다.
- * @param {number} daysBack
+ * studios.mjs에 등록된 신뢰 Vimeo 사용자(스튜디오)들의 "최신작 + 역대 인기작"을 함께 수집합니다.
  * @returns {Promise<Array<object>>}
  */
-export async function fetchVimeoCandidates(daysBack = 5) {
+export async function fetchVimeoCandidates() {
   const token = process.env.VIMEO_ACCESS_TOKEN;
   if (!token) return [];
 
-  const cutoff = Date.now() - daysBack * 86400000;
   const vimeoStudios = STUDIOS.filter((s) => s.vimeo);
 
   const results = await Promise.all(
     vimeoStudios.map((studio) =>
-      fetchUserVideos(studio, token, cutoff).catch((err) => {
+      fetchUserVideos(studio, token).catch((err) => {
         console.warn(`[vimeo] ${studio.name} 수집 실패:`, err.message);
         return [];
       })
