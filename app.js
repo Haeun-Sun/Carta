@@ -1,5 +1,19 @@
 const ADMIN_SESSION_KEY = "carta_admin_password";
 
+// DB의 분류값(한글)을 필터 버튼에 표시할 영어 라벨로 묶습니다.
+// match에 여러 한글 분류를 넣으면 한 버튼으로 합쳐집니다(예: 큐레이션 매체 2곳 → Curated).
+// 표시 순서는 이 배열 순서를 따르고, 카드가 하나도 없는 분류의 버튼은 자동으로 숨깁니다.
+const CATEGORY_FILTERS = [
+  { label: "Motion Graphics", match: ["모션그래픽 스튜디오"] },
+  { label: "VFX", match: ["VFX 스튜디오"] },
+  { label: "Animation", match: ["애니메이션 스튜디오"] },
+  { label: "Media Art", match: ["미디어아트"] },
+  { label: "Music Video", match: ["뮤직비디오 프로덕션"] },
+  { label: "Tech", match: ["테크 기업"] },
+  { label: "Staff Picks", match: ["Vimeo Staff Picks"] },
+  { label: "Curated", match: ["큐레이션 (Motionographer)", "큐레이션 (The FWA)"] }
+];
+
 let supabaseClient = null;
 
 function getClient() {
@@ -132,6 +146,7 @@ function renderCard(item) {
   const tpl = document.getElementById("card-template").content.cloneNode(true);
   const link = tpl.querySelector(".board-item");
   link.href = item.source_url;
+  link.dataset.category = item.category ?? ""; // 필터링 기준
   link.addEventListener("click", (e) => {
     e.preventDefault(); // 새 탭 이동 대신 팝업으로 바로 재생 (휠클릭/우클릭으로 새 탭 열기는 그대로 가능)
     openVideoModal(item);
@@ -183,6 +198,43 @@ function renderCard(item) {
   return tpl;
 }
 
+/** 선택된 분류(match 배열)에 맞는 카드만 보이고 나머지는 숨깁니다. match가 null이면 전체 표시. */
+function applyFilter(match) {
+  document.querySelectorAll("#board .board-item").forEach((el) => {
+    const show = !match || match.includes(el.dataset.category);
+    el.style.display = show ? "" : "none";
+  });
+}
+
+/** 실제 데이터에 존재하는 분류만 골라 ALL + 분류별 태그 버튼을 만듭니다. */
+function buildFilterBar(data) {
+  const bar = document.getElementById("filter-bar");
+  if (!bar) return;
+
+  const present = new Set(data.map((d) => d.category).filter(Boolean));
+  const groups = CATEGORY_FILTERS.filter((g) => g.match.some((m) => present.has(m)));
+
+  bar.innerHTML = "";
+  const buttons = [];
+
+  const makeTag = (label, match) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "filter-tag";
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.toggle("is-active", b === btn));
+      applyFilter(match);
+    });
+    buttons.push(btn);
+    bar.appendChild(btn);
+    return btn;
+  };
+
+  makeTag("ALL", null).classList.add("is-active");
+  groups.forEach((g) => makeTag(g.label, g.match));
+}
+
 async function loadBoard() {
   const board = document.getElementById("board");
 
@@ -208,6 +260,7 @@ async function loadBoard() {
 
   board.innerHTML = "";
   data.forEach((item) => board.appendChild(renderCard(item)));
+  buildFilterBar(data);
 }
 
 document.getElementById("admin-toggle").addEventListener("click", handleAdminToggleClick);

@@ -58,6 +58,17 @@ a { color: var(--text); text-decoration: none; }
   color: var(--muted); font-size: 12px; margin: 0;
 }
 
+/* 카테고리 필터 태그 (ALL + 분류별) */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.filter-tag {
+  font-family: var(--font); font-size: 12px; color: var(--text);
+  background: none; border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; cursor: pointer; white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.filter-tag:hover { border-color: var(--text); }
+.filter-tag.is-active { background: var(--text); color: #fff; border-color: var(--text); }
+
 /* Board — 균일한 사이즈의 정렬된 그리드 (masonry 아님) */
 .board {
   display: grid;
