@@ -231,7 +231,7 @@ function buildFilterBar(data) {
     return btn;
   };
 
-  makeTag("ALL", null).classList.add("is-active");
+  makeTag("All", null).classList.add("is-active");
   groups.forEach((g) => makeTag(g.label, g.match));
 }
 
