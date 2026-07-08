@@ -46,6 +46,9 @@ a { color: var(--text); text-decoration: none; }
   line-height: 0; cursor: pointer;
 }
 .admin-toggle:hover { opacity: 0.7; }
+/* 관리자 모드 ON: 어두운 원형 배경 + 흰색 아이콘으로 "켜짐"을 명확히 표시
+   (배경 없이 흰색으로만 반전하면 흰 헤더에 묻혀 버튼이 안 보였음) */
+.admin-toggle.is-active { background: #111; }
 .admin-toggle.is-active svg { filter: invert(1); }
 
 /* Intro */
