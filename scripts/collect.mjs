@@ -35,11 +35,20 @@ async function main() {
   const ranked = rankCandidates(fresh);
   console.log(`[info] 후보 ${ranked.length}개 중 최대 ${MAX_PER_RUN}개를 채웁니다.`);
 
+  // 한 실행에서 같은 스튜디오/소스가 여러 칸을 독점하지 못하게 막습니다.
+  // (예전엔 Netflix가 하루에 5개를 다 가져가 디자인 스튜디오가 안 뜨는 문제가 있었음)
+  // author가 있으면 스튜디오 기준, 없으면(큐레이션 매체 등) 소스/분류 기준으로 1개씩만.
+  const usedKeys = new Set();
+
   let saved = 0;
   for (const candidate of ranked) {
     if (saved >= MAX_PER_RUN) break;
 
     const category = candidate.category ?? null;
+    const diversityKey =
+      (candidate.author && candidate.author.trim().toLowerCase()) || `src:${category ?? candidate.source}`;
+    if (usedKeys.has(diversityKey)) continue;
+
     console.log(`  [pick] [${category ?? "미분류"}] ${candidate.author ?? "?"} — ${candidate.title}`);
 
     const gifUrl = await makeGifThumbnail(candidate.sourceUrl);
@@ -63,6 +72,7 @@ async function main() {
       continue;
     }
 
+    usedKeys.add(diversityKey);
     saved += 1;
   }
 

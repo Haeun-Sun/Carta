@@ -49,16 +49,12 @@ export const STUDIOS = [
   { name: "Ars Thanea", category: "VFX 스튜디오", vimeo: "arsthanea" }, // 폴란드
   { name: "Territory Studio", category: "VFX 스튜디오", vimeo: "territorystudio" }, // 영국
 
-  // 애니메이션 스튜디오 / 영화사
-  { name: "LAIKA", category: "애니메이션 스튜디오", youtube: "@LAIKAStudios" }, // 미국
-  { name: "Cartoon Saloon", category: "애니메이션 스튜디오", youtube: "@CartoonSaloonStudio" }, // 아일랜드
-  { name: "Pixar", category: "애니메이션 스튜디오", youtube: "@Pixar" }, // 미국
+  // 애니메이션 스튜디오
+  // (Pixar·Disney·Sony·Netflix처럼 영화 트레일러만 올리는 채널은 "디자인 레퍼런스"가
+  //  아니라 콘텐츠 홍보물이라 제외함. 공정/아트하우스 성격이 강한 곳만 유지)
+  { name: "LAIKA", category: "애니메이션 스튜디오", youtube: "@LAIKAStudios" }, // 미국 (스톱모션 제작 공정)
+  { name: "Cartoon Saloon", category: "애니메이션 스튜디오", youtube: "@CartoonSaloonStudio" }, // 아일랜드 (아트하우스)
   { name: "Passion Pictures", category: "애니메이션 스튜디오", vimeo: "passionpictures" }, // 영국
-  { name: "Disney Animation", category: "애니메이션 스튜디오", youtube: "@DisneyAnimation" }, // 미국
-  { name: "Sony Pictures Animation", category: "애니메이션 스튜디오", youtube: "@SonyAnimation" }, // 미국
-
-  // 영화사/스트리밍
-  { name: "Netflix", category: "영화사/스트리밍", youtube: "@Netflix" },
 
   // 미디어아트
   { name: "teamLab", category: "미디어아트", channelId: "UCYab90rmhVPfbrnmN-Zmwhg" }, // 일본
@@ -71,9 +67,7 @@ export const STUDIOS = [
   // 뮤직비디오 프로덕션
   { name: "Partizan", category: "뮤직비디오 프로덕션", youtube: "@PartizanOfficial" }, // 프랑스/전세계
 
-  // 테크/IT 기업 (고퀄리티 제품·브랜드 영상)
-  { name: "Apple", category: "테크 기업", youtube: "@Apple" }, // 미국
-  { name: "Google", category: "테크 기업", youtube: "@Google" }, // 미국
-  { name: "Microsoft", category: "테크 기업", youtube: "@Microsoft" }, // 미국
-  { name: "Samsung", category: "테크 기업", youtube: "@Samsung" } // 대한민국
+  // 테크/IT 기업 — 브랜드 필름 퀄리티가 꾸준히 검증된 Apple만 유지
+  // (Google·Microsoft·Samsung은 일반 제품/기업 광고 위주라 디자인 레퍼런스로 부적합해 제외)
+  { name: "Apple", category: "테크 기업", youtube: "@Apple" } // 미국
 ];

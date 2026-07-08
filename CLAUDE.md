@@ -74,6 +74,21 @@ index.html + app.js → Supabase 읽어서 CSS Grid 보드로 렌더링
    "역대 인기순(조회수)"을 둘 다 가져옴. 랭킹도 최신성 급감 대신 30일에 걸쳐
    완만히 감소 + 인기도 비중을 키워서, 오래된 대표작도 경쟁 가능하게 조정함.
 
+   **3-1. 디자인 레퍼런스가 안 모이던 문제 수정 (2026-07-08).** 보드가 Netflix
+   예고편·Pixar 트레일러·테크 기업 광고로 도배되고 정작 BUCK·Tendril 같은 디자인
+   스튜디오 작업이 안 뜨던 문제를 3가지로 고침:
+   - **화이트리스트에서 트레일러/광고 채널 제거** — Netflix, Pixar, Disney Animation,
+     Sony Pictures Animation(영화 트레일러 전용), Google·Microsoft·Samsung(제품/기업
+     광고 위주)을 뺌. 이들은 "디자인 레퍼런스"가 아니라 콘텐츠 홍보물인데 조회수·업로드
+     빈도가 압도적이라 디자인 스튜디오를 밀어냈음. Apple(브랜드 필름 퀄리티)과
+     LAIKA·Cartoon Saloon(공정/아트하우스)은 디자인 관련성이 있어 유지. (47곳 → 40곳)
+   - **조회수 플랫폼 정규화** (`ranking.mjs`의 `PLATFORM_BASELINE`) — 유튜브 조회수와
+     Vimeo 재생수는 규모가 달라 그냥 비교하면 유튜브가 항상 이김. "그 플랫폼 기준으로
+     얼마나 인기 있나"로 환산해 Vimeo 디자인 명작도 동등하게 경쟁하게 함.
+   - **채널당 1개 제한** (`collect.mjs`의 `usedKeys`) — 한 실행에서 한 스튜디오/소스는
+     최대 1칸만. 한 채널이 5칸을 독점하지 못하게 강제로 다양화.
+   → 이 방향(디자인 중심, 트레일러/광고 배제)은 사용자가 명시적으로 선택했음.
+
 4. **쇼츠는 제외.** 60초 미만 또는 `#shorts` 태그가 붙은 영상은 자동 필터링.
 
 5. **카드 정보 순서(고정):** 제목(1줄, 넘치면 말줄임) → 제작 스튜디오(없으면 공백)
@@ -145,21 +160,23 @@ done
 - **추가 전 반드시 웹 검색으로 채널 실재 + 업로드 콘텐츠 유무 확인.**
 - 잘못된 핸들이어도 프로그램은 죽지 않고 해당 항목만 건너뜀(로그 경고).
 
-### 현재 화이트리스트 (총 47곳, 2026-07-06 기준 실제 코드와 동기화됨)
-- 모션그래픽(20): BUCK, Gentleman Scholar, Giant Ant, ManvsMachine, Psyop, Elastic,
+### 현재 화이트리스트 (총 40곳, 2026-07-08 기준 실제 코드와 동기화됨)
+- 모션그래픽(22): BUCK, Gentleman Scholar, Giant Ant, ManvsMachine, Psyop, Elastic,
   Trollbäck+Company, Ordinary Folk, Golden Wolf, Tendril, FutureDeluxe, Oddfellows,
   Aggressive, Brand New School, Lobo, nerdo, Art&Graft, WOW inc.(일), BYTS(한),
   SUPER VERY MORE(한), 2GREY(한), swim(한)
 - VFX(7): The Mill, Framestore, Territory Studio, Sehsucht, Ars Thanea, Blur Studio, ILM
-- 애니메이션(6): LAIKA, Cartoon Saloon, Pixar, Passion Pictures, Disney Animation,
-  Sony Pictures Animation
-- 영화사/스트리밍(1): Netflix
+- 애니메이션(3): LAIKA, Cartoon Saloon, Passion Pictures
 - 미디어아트(6): teamLab(일, channelId 방식), d'strict(한, channelId 방식),
   Lampers(한, channelId 방식), Easywith(한), Universal Everything(영), NONOTAK STUDIO(프)
 - 뮤직비디오(1): Partizan(프)
-- 테크(4): Apple, Google, Microsoft, Samsung
+- 테크(1): Apple
 
 **제외/보류한 후보 (실재하지만 이유가 있어 뺌, 다시 검토 시 참고):**
+- Netflix / Pixar / Disney Animation / Sony Pictures Animation — 영화 트레일러 전용 채널이라
+  디자인 레퍼런스가 아님. 조회수·업로드 빈도로 디자인 스튜디오를 밀어내서 2026-07-08 제거
+  ([3-1 결정](#3-지금까지-내린-핵심-결정-그리고-이유) 참고).
+- Google / Microsoft / Samsung — 일반 제품/기업 광고 위주라 디자인 레퍼런스로 부적합, 같은 날 제거.
 - DreamWorks Animation — 유튜브 채널이 여러 개로 파편화(Universal 인수 이후)돼 있어 정확한 대표 채널을 특정 못 함
 - Nexus Studios — 유튜브 핸들이 불안정(자동생성 형태)하고 혼동되는 동명 채널 존재
 - Blinkink — 실제 영상이 `blinkprods`(Blink 그룹 통합 계정) 안에 있어서, 등록하면 애니메이션 외 실사 광고 영상까지 섞여 들어옴 (현재 코드는 특정 채널만 골라오는 기능이 없음)
