@@ -9,6 +9,10 @@
 
 * { box-sizing: border-box; }
 
+/* 스크롤바 자리를 항상 예약 → 필터로 카드 수가 줄어 스크롤바가 사라져도
+   콘텐츠 폭/좌우 여백이 튀지 않게 함 (scrollbar-gutter 미지원 브라우저는 overflow로 대비) */
+html { scrollbar-gutter: stable; overflow-y: scroll; }
+
 body {
   margin: 0;
   background: var(--bg);
