@@ -61,6 +61,25 @@ function toCandidate(item, studio) {
   };
 }
 
+/**
+ * youtube.com/shorts/{id}로 요청해 "실제 쇼츠"인지 확인합니다.
+ * 쇼츠면 그 경로에서 200으로 응답하고, 일반 영상이면 /watch로 리다이렉트(3xx)합니다.
+ * 네트워크 오류·타임아웃·리다이렉트 등 불확실한 경우엔 false(쇼츠 아님)로 처리해
+ * 정상 영상을 실수로 잃지 않도록 합니다(안전 우선).
+ */
+async function isYoutubeShort(videoId) {
+  try {
+    const res = await fetch(`https://www.youtube.com/shorts/${videoId}`, {
+      method: "HEAD",
+      redirect: "manual",
+      signal: AbortSignal.timeout(6000)
+    });
+    return res.status === 200;
+  } catch {
+    return false;
+  }
+}
+
 /** 영상 ID 목록의 상세정보(조회수/길이 등)를 받아 쇼츠를 걸러내고 후보로 변환합니다. */
 async function fetchStats(ids, studio, apiKey) {
   const unique = [...new Set(ids)];
@@ -75,13 +94,23 @@ async function fetchStats(ids, studio, apiKey) {
   if (!statsRes.ok) return [];
   const statsJson = await statsRes.json();
 
-  const results = [];
+  // 1차: 60초 미만 · #shorts 태그로 빠르게 거르기
+  const passed = [];
   for (const item of statsJson.items ?? []) {
     const seconds = parseDurationSeconds(item.contentDetails?.duration);
     if (isLikelyShort(item.snippet.title, item.snippet.description, seconds)) continue;
-    results.push(toCandidate(item, studio));
+    passed.push({ item, seconds });
   }
-  return results;
+
+  // 2차: 요즘 쇼츠는 최대 3분이라 60~180초짜리가 1차를 통과할 수 있음.
+  // 3분 이하(또는 길이 불명) 영상만 /shorts/ 경로로 실제 쇼츠 여부를 정밀 확인.
+  const checked = await Promise.all(
+    passed.map(async ({ item, seconds }) => {
+      if (seconds <= 180 && (await isYoutubeShort(item.id))) return null;
+      return toCandidate(item, studio);
+    })
+  );
+  return checked.filter(Boolean);
 }
 
 async function resolveStudioChannelId(studio, apiKey) {

@@ -7,11 +7,34 @@ import { makeGifThumbnail } from "./lib/gif.mjs";
 
 const MAX_PER_RUN = Number(process.env.MAX_PER_RUN ?? 5);
 
+/**
+ * 같은 영상이라도 주소 형태가 다를 수 있어(youtu.be/ID, youtube.com/watch?v=ID,
+ * /shorts/ID, 파라미터 유무, vimeo.com/ID 등) 영상 고유 ID로 정규화한 키를 만듭니다.
+ * 이 키로 중복을 판별하면 형태가 달라도 같은 영상을 한 번만 담습니다.
+ */
+function videoKey(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return "yt:" + u.pathname.slice(1);
+    if (u.hostname.includes("youtube.com")) {
+      const id = u.searchParams.get("v") || u.pathname.match(/\/(?:shorts|embed)\/([\w-]+)/)?.[1];
+      if (id) return "yt:" + id;
+    }
+    if (u.hostname.includes("vimeo.com")) {
+      const id = u.pathname.match(/(\d+)/)?.[1];
+      if (id) return "vimeo:" + id;
+    }
+  } catch {
+    /* URL 파싱 실패 시 아래 원본 문자열로 폴백 */
+  }
+  return url;
+}
+
 async function main() {
   const supabase = getServiceClient();
 
   const { data: existingUrls } = await supabase.from("references").select("source_url");
-  const seen = new Set((existingUrls ?? []).map((r) => r.source_url));
+  const seen = new Set((existingUrls ?? []).map((r) => videoKey(r.source_url)));
 
   const [studioYoutube, studioVimeo, staffPicks, curationFeeds] = await Promise.all([
     fetchYoutubeCandidates(), // 큐레이션된 스튜디오 채널 - 최신작+역대 인기작 (신뢰 소스)
@@ -24,7 +47,8 @@ async function main() {
   const byUrl = new Map();
   const addCandidates = (list) => {
     for (const c of list) {
-      if (!seen.has(c.sourceUrl) && !byUrl.has(c.sourceUrl)) byUrl.set(c.sourceUrl, c);
+      const key = videoKey(c.sourceUrl);
+      if (!seen.has(key) && !byUrl.has(key)) byUrl.set(key, c);
     }
   };
   addCandidates([...studioYoutube, ...studioVimeo, ...staffPicks, ...curationFeeds]);
