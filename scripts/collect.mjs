@@ -1,6 +1,6 @@
 import { getServiceClient } from "./lib/supabase.mjs";
-import { fetchYoutubeCandidates } from "./lib/youtube.mjs";
-import { fetchVimeoCandidates, fetchStaffPicksCandidates } from "./lib/vimeo.mjs";
+import { fetchYoutubeCandidates, fetchYoutubeRecentDeep } from "./lib/youtube.mjs";
+import { fetchVimeoCandidates, fetchStaffPicksCandidates, fetchVimeoRecentDeep } from "./lib/vimeo.mjs";
 import { fetchCurationFeedCandidates } from "./lib/feeds.mjs";
 import { rankCandidates } from "./lib/ranking.mjs";
 import { makeGifThumbnail } from "./lib/gif.mjs";
@@ -22,10 +22,26 @@ async function main() {
 
   // 여러 소스가 같은 영상을 중복으로 반환할 수 있어 URL 기준으로 한 번 더 정리합니다.
   const byUrl = new Map();
-  for (const c of [...studioYoutube, ...studioVimeo, ...staffPicks, ...curationFeeds]) {
-    if (!seen.has(c.sourceUrl) && !byUrl.has(c.sourceUrl)) byUrl.set(c.sourceUrl, c);
+  const addCandidates = (list) => {
+    for (const c of list) {
+      if (!seen.has(c.sourceUrl) && !byUrl.has(c.sourceUrl)) byUrl.set(c.sourceUrl, c);
+    }
+  };
+  addCandidates([...studioYoutube, ...studioVimeo, ...staffPicks, ...curationFeeds]);
+  let fresh = [...byUrl.values()];
+
+  // 2차 검색: 1차에서 모은 신규 후보가 목표치보다 적으면, 각 채널의 최신순 목록을
+  // 더 깊이 뒤져(YouTube·Vimeo) 아직 수집 안 된 최신 영상들로 부족분을 채웁니다.
+  // (조용한 날에도 보드가 최신 작업 위주로 계속 갱신되도록)
+  if (fresh.length < MAX_PER_RUN) {
+    console.log(`[info] 신규 후보 ${fresh.length}개 → 2차 검색(최신순 심화)으로 보강합니다.`);
+    const [ytDeep, vimeoDeep] = await Promise.all([
+      fetchYoutubeRecentDeep().catch(() => []),
+      fetchVimeoRecentDeep().catch(() => [])
+    ]);
+    addCandidates([...vimeoDeep, ...ytDeep]);
+    fresh = [...byUrl.values()];
   }
-  const fresh = [...byUrl.values()];
 
   if (fresh.length === 0) {
     console.log("[skip] 새로운 후보가 없습니다.");

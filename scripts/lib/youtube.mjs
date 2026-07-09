@@ -61,24 +61,14 @@ function toCandidate(item, studio) {
   };
 }
 
-async function fetchChannelVideos(studio, apiKey) {
-  const channelId = studio.channelId || (await resolveChannelId(studio.youtube, apiKey));
-  if (!channelId) {
-    console.warn(`[youtube] 채널을 찾을 수 없어 건너뜁니다: ${studio.name} (${studio.youtube})`);
-    return [];
-  }
-
-  // "최신작"과 "역대 인기작(오래됐어도 훌륭한 대표작)"을 함께 가져옵니다.
-  const [recentIds, popularIds] = await Promise.all([
-    searchChannel(channelId, apiKey, "date", 8),
-    searchChannel(channelId, apiKey, "viewCount", 8)
-  ]);
-  const ids = [...new Set([...recentIds, ...popularIds])];
-  if (ids.length === 0) return [];
+/** 영상 ID 목록의 상세정보(조회수/길이 등)를 받아 쇼츠를 걸러내고 후보로 변환합니다. */
+async function fetchStats(ids, studio, apiKey) {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return [];
 
   const statsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
   statsUrl.searchParams.set("part", "snippet,statistics,contentDetails");
-  statsUrl.searchParams.set("id", ids.join(","));
+  statsUrl.searchParams.set("id", unique.join(","));
   statsUrl.searchParams.set("key", apiKey);
 
   const statsRes = await fetch(statsUrl);
@@ -92,6 +82,34 @@ async function fetchChannelVideos(studio, apiKey) {
     results.push(toCandidate(item, studio));
   }
   return results;
+}
+
+async function resolveStudioChannelId(studio, apiKey) {
+  const channelId = studio.channelId || (await resolveChannelId(studio.youtube, apiKey));
+  if (!channelId) {
+    console.warn(`[youtube] 채널을 찾을 수 없어 건너뜁니다: ${studio.name} (${studio.youtube})`);
+  }
+  return channelId;
+}
+
+async function fetchChannelVideos(studio, apiKey) {
+  const channelId = await resolveStudioChannelId(studio, apiKey);
+  if (!channelId) return [];
+
+  // "최신작"과 "역대 인기작(오래됐어도 훌륭한 대표작)"을 함께 가져옵니다.
+  const [recentIds, popularIds] = await Promise.all([
+    searchChannel(channelId, apiKey, "date", 8),
+    searchChannel(channelId, apiKey, "viewCount", 8)
+  ]);
+  return fetchStats([...recentIds, ...popularIds], studio, apiKey);
+}
+
+/** 2차 검색용: 채널의 "최신순" 목록을 더 깊이(기본 50개) 가져옵니다. */
+async function fetchChannelRecent(studio, apiKey, maxResults) {
+  const channelId = await resolveStudioChannelId(studio, apiKey);
+  if (!channelId) return [];
+  const ids = await searchChannel(channelId, apiKey, "date", maxResults);
+  return fetchStats(ids, studio, apiKey);
 }
 
 /**
@@ -108,6 +126,28 @@ export async function fetchYoutubeCandidates() {
     youtubeStudios.map((studio) =>
       fetchChannelVideos(studio, apiKey).catch((err) => {
         console.warn(`[youtube] ${studio.name} 수집 실패:`, err.message);
+        return [];
+      })
+    )
+  );
+
+  return results.flat();
+}
+
+/**
+ * 2차 검색: 신규 업로드가 부족할 때, 각 채널의 최신순 목록을 더 깊이(maxResults개)
+ * 가져와 아직 수집 안 된 최신 영상들로 보드를 채웁니다.
+ * @param {number} maxResults 채널당 최대 조회 개수 (YouTube 검색 API 상한은 50)
+ */
+export async function fetchYoutubeRecentDeep(maxResults = 50) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) return [];
+
+  const youtubeStudios = STUDIOS.filter((s) => s.youtube || s.channelId);
+  const results = await Promise.all(
+    youtubeStudios.map((studio) =>
+      fetchChannelRecent(studio, apiKey, maxResults).catch((err) => {
+        console.warn(`[youtube] ${studio.name} 2차 수집 실패:`, err.message);
         return [];
       })
     )

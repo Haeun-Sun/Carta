@@ -61,11 +61,26 @@ export async function fetchStaffPicksCandidates(daysBack = 5) {
   return results;
 }
 
-async function fetchUserVideosBySort(studio, token, sort) {
+function mapVimeoVideo(studio, v) {
+  return {
+    source: "vimeo",
+    sourceUrl: v.link,
+    title: v.name,
+    author: studio.name,
+    category: studio.category,
+    trustedQuality: true, // 큐레이션된 스튜디오 목록 출처는 AI 퀄리티 게이트를 건너뜁니다
+    thumbnailUrl: v.pictures?.sizes?.at(-1)?.link,
+    publishedAt: v.release_time ?? v.created_time,
+    viewCount: v.stats?.plays ?? 0,
+    description: v.description ?? ""
+  };
+}
+
+async function fetchUserVideosBySort(studio, token, sort, perPage = 10) {
   const url = new URL(`https://api.vimeo.com/users/${studio.vimeo}/videos`);
   url.searchParams.set("sort", sort);
   url.searchParams.set("direction", "desc");
-  url.searchParams.set("per_page", "10");
+  url.searchParams.set("per_page", String(perPage));
   url.searchParams.set(
     "fields",
     "uri,name,description,link,release_time,created_time,duration,stats.plays,pictures.sizes"
@@ -107,19 +122,7 @@ async function fetchUserVideos(studio, token) {
   const results = [];
   for (const v of byUri.values()) {
     if (isLikelyShort(v.name, v.description ?? "", v.duration ?? 0)) continue;
-
-    results.push({
-      source: "vimeo",
-      sourceUrl: v.link,
-      title: v.name,
-      author: studio.name,
-      category: studio.category,
-      trustedQuality: true, // 큐레이션된 스튜디오 목록 출처는 AI 퀄리티 게이트를 건너뜁니다
-      thumbnailUrl: v.pictures?.sizes?.at(-1)?.link,
-      publishedAt: v.release_time ?? v.created_time,
-      viewCount: v.stats?.plays ?? 0,
-      description: v.description ?? ""
-    });
+    results.push(mapVimeoVideo(studio, v));
   }
   return results;
 }
@@ -140,6 +143,35 @@ export async function fetchVimeoCandidates() {
         console.warn(`[vimeo] ${studio.name} 수집 실패:`, err.message);
         return [];
       })
+    )
+  );
+
+  return results.flat();
+}
+
+/**
+ * 2차 검색: 신규 업로드가 부족할 때, 각 Vimeo 스튜디오의 최신순 목록을
+ * 더 깊이(perPage개) 가져와 아직 수집 안 된 최신 영상들로 보드를 채웁니다.
+ * @param {number} perPage 스튜디오당 최대 조회 개수
+ */
+export async function fetchVimeoRecentDeep(perPage = 50) {
+  const token = process.env.VIMEO_ACCESS_TOKEN;
+  if (!token) return [];
+
+  const vimeoStudios = STUDIOS.filter((s) => s.vimeo);
+
+  const results = await Promise.all(
+    vimeoStudios.map((studio) =>
+      fetchUserVideosBySort(studio, token, "date", perPage)
+        .then((videos) =>
+          videos
+            .filter((v) => !isLikelyShort(v.name, v.description ?? "", v.duration ?? 0))
+            .map((v) => mapVimeoVideo(studio, v))
+        )
+        .catch((err) => {
+          console.warn(`[vimeo] ${studio.name} 2차 수집 실패:`, err.message);
+          return [];
+        })
     )
   );
 
