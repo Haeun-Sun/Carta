@@ -88,7 +88,6 @@ export const STUDIOS = [
   // 애니메이션 스튜디오
   // (Pixar·Disney·Sony·Netflix처럼 영화 트레일러만 올리는 채널은 "디자인 레퍼런스"가
   //  아니라 콘텐츠 홍보물이라 제외함. 공정/아트하우스 성격이 강한 곳만 유지)
-  { name: "LAIKA", category: "애니메이션 스튜디오", youtube: "@LAIKAStudios" }, // 미국 (스톱모션 제작 공정)
   { name: "Cartoon Saloon", category: "애니메이션 스튜디오", youtube: "@CartoonSaloonStudio" }, // 아일랜드 (아트하우스)
   { name: "Passion Pictures", category: "애니메이션 스튜디오", vimeo: "passionpictures" }, // 영국
 
@@ -105,12 +104,8 @@ export const STUDIOS = [
   { name: "Lampers", category: "미디어아트", channelId: "UCeLH31l_NiejEVn_bRkO-QA" }, // 대한민국
   { name: "Easywith", category: "미디어아트", vimeo: "easywith" }, // 대한민국
   { name: "Universal Everything", category: "미디어아트", vimeo: "universaleverything" }, // 영국
-  { name: "NONOTAK STUDIO", category: "미디어아트", vimeo: "nonotak" }, // 프랑스
+  { name: "NONOTAK STUDIO", category: "미디어아트", vimeo: "nonotak" } // 프랑스
 
-  // 뮤직비디오 프로덕션
-  { name: "Partizan", category: "뮤직비디오 프로덕션", youtube: "@PartizanOfficial" }, // 프랑스/전세계
-
-  // 테크/IT 기업 — 브랜드 필름 퀄리티가 꾸준히 검증된 Apple만 유지
-  // (Google·Microsoft·Samsung은 일반 제품/기업 광고 위주라 디자인 레퍼런스로 부적합해 제외)
-  { name: "Apple", category: "테크 기업", youtube: "@Apple" } // 미국
+  // 제외됨(사용자 요청, 2026-07-09): Apple(테크 기업), LAIKA(애니메이션),
+  // Partizan(뮤직비디오 프로덕션) — 수집 대상에서 뺌
 ];
