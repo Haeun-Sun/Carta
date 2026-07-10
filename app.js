@@ -112,6 +112,95 @@ function toEmbedUrl(sourceUrl) {
   return null;
 }
 
+/** 입력 URL을 영상 ID 기반의 정규 주소로 변환합니다(수집 스크립트와 같은 형식). */
+function canonicalUrl(raw) {
+  let u;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (u.hostname.includes("youtu.be")) {
+    const id = u.pathname.slice(1);
+    return id ? { source: "youtube", url: `https://www.youtube.com/watch?v=${id}`, id } : null;
+  }
+  if (u.hostname.includes("youtube.com")) {
+    const id = u.searchParams.get("v") || u.pathname.match(/\/(?:shorts|embed)\/([\w-]+)/)?.[1];
+    return id ? { source: "youtube", url: `https://www.youtube.com/watch?v=${id}`, id } : null;
+  }
+  if (u.hostname.includes("vimeo.com")) {
+    const id = u.pathname.match(/(\d+)/)?.[1];
+    return id ? { source: "vimeo", url: `https://vimeo.com/${id}`, id } : null;
+  }
+  return null;
+}
+
+/** YouTube/Vimeo oEmbed로 제목·제작자·썸네일을 자동으로 가져옵니다(실패해도 무해). */
+async function fetchOEmbed(source, url) {
+  try {
+    const api =
+      source === "youtube"
+        ? `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+        : `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`;
+    const res = await fetch(api);
+    if (!res.ok) return null;
+    const j = await res.json();
+    return { title: j.title, author: j.author_name, thumbnail: j.thumbnail_url };
+  } catch {
+    return null;
+  }
+}
+
+function populateAddCategories() {
+  const select = document.getElementById("add-category");
+  if (!select) return;
+  for (const g of CATEGORY_FILTERS) {
+    const opt = document.createElement("option");
+    opt.value = g.match[0]; // 저장은 한글 분류값으로
+    opt.textContent = g.label; // 표시는 영어 라벨
+    select.appendChild(opt);
+  }
+}
+
+async function handleAddSubmit(event) {
+  event.preventDefault();
+  const status = document.getElementById("add-status");
+  const c = canonicalUrl(document.getElementById("add-url").value);
+  if (!c) {
+    status.textContent = "YouTube / Vimeo 링크만 추가할 수 있어요";
+    return;
+  }
+
+  status.textContent = "추가 중 —";
+  const meta = await fetchOEmbed(c.source, c.url);
+  const title = document.getElementById("add-title").value.trim() || meta?.title || "(제목 없음)";
+  const author = document.getElementById("add-author").value.trim() || meta?.author || null;
+  const category = document.getElementById("add-category").value || null;
+  const thumbnail =
+    meta?.thumbnail || (c.source === "youtube" ? `https://img.youtube.com/vi/${c.id}/hqdefault.jpg` : null);
+
+  const { error } = await getClient().rpc("add_reference", {
+    input_password: sessionStorage.getItem(ADMIN_SESSION_KEY),
+    p_source_url: c.url,
+    p_source: c.source,
+    p_title: title,
+    p_author: author,
+    p_category: category,
+    p_thumbnail_url: thumbnail
+  });
+
+  if (error) {
+    status.textContent = /이미 등록/.test(error.message)
+      ? "이미 등록된 영상이에요"
+      : `추가 실패: ${error.message}`;
+    return;
+  }
+
+  status.textContent = "추가됐습니다 ✓";
+  event.target.reset();
+  loadBoard();
+}
+
 function openVideoModal(item) {
   const embedUrl = toEmbedUrl(item.source_url);
   if (!embedUrl) {
@@ -266,9 +355,11 @@ async function loadBoard() {
 document.getElementById("admin-toggle").addEventListener("click", handleAdminToggleClick);
 document.getElementById("video-modal-close").addEventListener("click", closeVideoModal);
 document.querySelector(".video-modal-backdrop").addEventListener("click", closeVideoModal);
+document.getElementById("admin-add").addEventListener("submit", handleAddSubmit);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeVideoModal();
 });
 
+populateAddCategories();
 setAdminMode(isAdminMode());
 loadBoard();

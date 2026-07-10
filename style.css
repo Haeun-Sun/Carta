@@ -73,6 +73,24 @@ a { color: var(--text); text-decoration: none; }
 .filter-tag:hover { border-color: var(--text); }
 .filter-tag.is-active { background: var(--text); color: #fff; border-color: var(--text); }
 
+/* 관리자 전용 링크 추가 폼 — 관리자 모드일 때만 보임 */
+.admin-add { display: none; }
+body.admin-mode .admin-add {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 16px; padding: 14px; border: 1px solid var(--line); background: #fafafa;
+}
+.add-input {
+  font-family: var(--font); font-size: 12px; color: var(--text);
+  background: #fff; border: 1px solid var(--line); padding: 7px 10px;
+}
+.add-input-url { flex: 1 1 260px; }
+.add-submit {
+  font-family: var(--font); font-size: 12px; color: #fff; font-weight: 700;
+  background: var(--text); border: 1px solid var(--text); padding: 7px 16px; cursor: pointer;
+}
+.add-submit:hover { opacity: 0.85; }
+.add-status { font-size: 12px; color: var(--muted); }
+
 /* Board — 균일한 사이즈의 정렬된 그리드 (masonry 아님) */
 .board {
   display: grid;

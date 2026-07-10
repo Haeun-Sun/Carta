@@ -52,6 +52,14 @@
   <section class="intro">
     <p class="intro-label">Curated Inspirations</p>
     <div id="filter-bar" class="filter-bar"></div>
+    <form id="admin-add" class="admin-add">
+      <input id="add-url" type="url" class="add-input add-input-url" placeholder="YouTube / Vimeo 링크 붙여넣기" required />
+      <input id="add-title" type="text" class="add-input" placeholder="제목 (선택 — 비우면 자동)" />
+      <input id="add-author" type="text" class="add-input" placeholder="제작 스튜디오 (선택)" />
+      <select id="add-category" class="add-input"><option value="">분류 (선택)</option></select>
+      <button type="submit" class="add-submit">추가</button>
+      <span id="add-status" class="add-status"></span>
+    </form>
   </section>
 
   <section id="board" class="board">
