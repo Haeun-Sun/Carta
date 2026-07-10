@@ -89,6 +89,21 @@ index.html + app.js → Supabase 읽어서 CSS Grid 보드로 렌더링
      최대 1칸만. 한 채널이 5칸을 독점하지 못하게 강제로 다양화.
    → 이 방향(디자인 중심, 트레일러/광고 배제)은 사용자가 명시적으로 선택했음.
 
+   **3-2. 레퍼런스 라이브러리 기반 화이트리스트 확장 (2026-07-09).** 사용자의 로컬
+   레퍼런스 폴더(`F:\001_레퍼런스영상`, 영상 4,000여 개)를 "퀄리티 기준"으로 삼음.
+   파일명이 `분류_스튜디오_프로젝트` 규칙이라 스튜디오명을 빈도순으로 추출 → 사용자가
+   인정하는 퀄리티의 스튜디오 목록을 도출 → 화이트리스트에 없던 곳들의 공식 채널을
+   웹 검증 후 37곳 추가함 (40곳 → 77곳). 예: Imaginary Forces, Carbon, Hornet, The Line,
+   Aixsponza, Unit Image, Six N. Five, Roof Studio, Undesigned Museum, Woot, Delpic,
+   Giantstep, Bito, Not Real, Zombie Studio 등. Buda.tv는 "Psyop에 흡수됐다"던 과거
+   정보가 틀렸음이 확인돼(독립 유지) 다시 추가함.
+   → **핵심 교훈: "퀄리티 기준"은 AI 화질 분석이 아니라 "신뢰 스튜디오 목록"으로 구현됨.**
+   자동 수집은 클라우드(GitHub Actions)에서 돌아 로컬 F드라이브에 접근 불가하고 AI 분석도
+   제거됐으므로, 퀄리티 통제 수단은 오직 화이트리스트뿐. 레퍼런스 폴더는 이 화이트리스트를
+   보정하는 근거로 활용.
+   - **검증 후 제외한 후보**: Logan(공식 채널 확인 실패), Ollie Studio(영상 채널 없음),
+     Seenvision(서울 vs 베이징 동명 충돌), Willo·Rocketpanda·ZHEESHEE(정체/국적 불확실).
+
 4. **쇼츠는 제외.** 60초 미만 또는 `#shorts` 태그가 붙은 영상은 자동 필터링.
 
 5. **카드 정보 순서(고정):** 제목(1줄, 넘치면 말줄임) → 제작 스튜디오(없으면 공백)
@@ -160,17 +175,11 @@ done
 - **추가 전 반드시 웹 검색으로 채널 실재 + 업로드 콘텐츠 유무 확인.**
 - 잘못된 핸들이어도 프로그램은 죽지 않고 해당 항목만 건너뜀(로그 경고).
 
-### 현재 화이트리스트 (총 40곳, 2026-07-08 기준 실제 코드와 동기화됨)
-- 모션그래픽(22): BUCK, Gentleman Scholar, Giant Ant, ManvsMachine, Psyop, Elastic,
-  Trollbäck+Company, Ordinary Folk, Golden Wolf, Tendril, FutureDeluxe, Oddfellows,
-  Aggressive, Brand New School, Lobo, nerdo, Art&Graft, WOW inc.(일), BYTS(한),
-  SUPER VERY MORE(한), 2GREY(한), swim(한)
-- VFX(7): The Mill, Framestore, Territory Studio, Sehsucht, Ars Thanea, Blur Studio, ILM
-- 애니메이션(3): LAIKA, Cartoon Saloon, Passion Pictures
-- 미디어아트(6): teamLab(일, channelId 방식), d'strict(한, channelId 방식),
-  Lampers(한, channelId 방식), Easywith(한), Universal Everything(영), NONOTAK STUDIO(프)
-- 뮤직비디오(1): Partizan(프)
-- 테크(1): Apple
+### 현재 화이트리스트 (총 77곳, 2026-07-09 기준)
+> ⚠️ **전체 목록의 기준(source of truth)은 항상 `scripts/lib/studios.mjs`입니다.**
+> (과거에 이 문서와 코드가 어긋나 혼동이 있었음 — 개수/목록이 궁금하면 코드를 직접 볼 것.)
+> 카테고리별 개수: 모션그래픽 49 · VFX 12 · 애니메이션 8 · 미디어아트 6 · 뮤직비디오 1 · 테크 1.
+- 2026-07-09에 레퍼런스 라이브러리 기반으로 37곳을 추가함([3-2 결정](#3-지금까지-내린-핵심-결정-그리고-이유) 참고). 추가분은 studios.mjs에서 "레퍼런스 라이브러리 기반 추가" 주석으로 표시돼 있음.
 
 **제외/보류한 후보 (실재하지만 이유가 있어 뺌, 다시 검토 시 참고):**
 - Netflix / Pixar / Disney Animation / Sony Pictures Animation — 영화 트레일러 전용 채널이라
@@ -178,9 +187,11 @@ done
   ([3-1 결정](#3-지금까지-내린-핵심-결정-그리고-이유) 참고).
 - Google / Microsoft / Samsung — 일반 제품/기업 광고 위주라 디자인 레퍼런스로 부적합, 같은 날 제거.
 - DreamWorks Animation — 유튜브 채널이 여러 개로 파편화(Universal 인수 이후)돼 있어 정확한 대표 채널을 특정 못 함
-- Nexus Studios — 유튜브 핸들이 불안정(자동생성 형태)하고 혼동되는 동명 채널 존재
+- Nexus Studios — 유튜브 핸들이 불안정(자동생성 형태)하고 혼동되는 동명 채널 존재 (2026-07-09 재검토했으나 여전히 공식 사이트가 유튜브를 직접 링크 안 해서 보류)
 - Blinkink — 실제 영상이 `blinkprods`(Blink 그룹 통합 계정) 안에 있어서, 등록하면 애니메이션 외 실사 광고 영상까지 섞여 들어옴 (현재 코드는 특정 채널만 골라오는 기능이 없음)
-- Buda.tv — Psyop 패밀리에 합류(흡수)돼서 Psyop 항목으로 이미 커버됨, 중복 방지 차 제외
+- Logan / Ollie Studio — 레퍼런스에 있으나 공식 영상 채널을 확증 못 함 (2026-07-09 검증)
+- Seenvision(서울 vs 베이징 동명 충돌) / Willo / Rocketpanda / ZHEESHEE — 채널은 있으나 정체·국적 불확실해 보류
+- ~~Buda.tv~~ — "Psyop에 흡수"는 오정보였고 독립 유지 확인돼 2026-07-09 화이트리스트에 추가함
 
 ---
 
