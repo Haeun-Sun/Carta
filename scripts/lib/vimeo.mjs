@@ -103,24 +103,16 @@ async function fetchUserVideosBySort(studio, token, sort, perPage = 10) {
 }
 
 /**
- * "최신작"(sort=date)과 "역대 인기작"(sort=plays)을 함께 가져옵니다.
- * YouTube 수집과 동일하게 날짜 제한을 두지 않아, 예전 대표작도 랭킹에서
- * 인기도로 경쟁할 수 있습니다(오래된 후보는 ranking.mjs의 최신성 점수가
- * 자연히 낮아지고, 이미 저장된 영상은 collect.mjs의 URL 중복 체크로 걸러집니다).
+ * "최신작 최우선" — 스튜디오의 최신 업로드(sort=date)만 가져옵니다.
+ * (재생수 상위=역대 인기작 수집은 하지 않음. 옛 대박 영상이 계속 끌려오던 문제 방지.)
+ * 최신작이 부족한 날엔 collect.mjs의 2차 검색(fetchVimeoRecentDeep)이 최신순으로
+ * 더 깊이 내려가 과거 업로드로 부족분을 채웁니다.
  */
 async function fetchUserVideos(studio, token) {
-  const [recent, popular] = await Promise.all([
-    fetchUserVideosBySort(studio, token, "date"),
-    fetchUserVideosBySort(studio, token, "plays")
-  ]);
-
-  const byUri = new Map();
-  for (const v of [...recent, ...popular]) {
-    if (!byUri.has(v.uri)) byUri.set(v.uri, v);
-  }
+  const recent = await fetchUserVideosBySort(studio, token, "date", 12);
 
   const results = [];
-  for (const v of byUri.values()) {
+  for (const v of recent) {
     if (isLikelyShort(v.name, v.description ?? "", v.duration ?? 0)) continue;
     results.push(mapVimeoVideo(studio, v));
   }
@@ -128,7 +120,8 @@ async function fetchUserVideos(studio, token) {
 }
 
 /**
- * studios.mjs에 등록된 신뢰 Vimeo 사용자(스튜디오)들의 "최신작 + 역대 인기작"을 함께 수집합니다.
+ * studios.mjs에 등록된 신뢰 Vimeo 사용자(스튜디오)들의 "최신 업로드"를 수집합니다.
+ * (재생수 상위=역대 인기작 수집은 하지 않음. 최신작 최우선 원칙)
  * @returns {Promise<Array<object>>}
  */
 export async function fetchVimeoCandidates() {

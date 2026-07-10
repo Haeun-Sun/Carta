@@ -125,12 +125,12 @@ async function fetchChannelVideos(studio, apiKey) {
   const channelId = await resolveStudioChannelId(studio, apiKey);
   if (!channelId) return [];
 
-  // "최신작"과 "역대 인기작(오래됐어도 훌륭한 대표작)"을 함께 가져옵니다.
-  const [recentIds, popularIds] = await Promise.all([
-    searchChannel(channelId, apiKey, "date", 8),
-    searchChannel(channelId, apiKey, "viewCount", 8)
-  ]);
-  return fetchStats([...recentIds, ...popularIds], studio, apiKey);
+  // "최신작 최우선" — 채널의 최신 업로드만 가져옵니다.
+  // (조회수 상위=역대 인기작 수집은 하지 않음. 그게 d'strict Wave처럼 옛 대박 영상을
+  //  계속 끌어오던 원인이었음.) 최신작이 부족한 날엔 collect.mjs의 2차 검색이
+  //  최신순으로 더 깊이(=과거 업로드) 내려가 부족분을 채웁니다.
+  const recentIds = await searchChannel(channelId, apiKey, "date", 12);
+  return fetchStats(recentIds, studio, apiKey);
 }
 
 /** 2차 검색용: 채널의 "최신순" 목록을 더 깊이(기본 50개) 가져옵니다. */
@@ -142,8 +142,8 @@ async function fetchChannelRecent(studio, apiKey, maxResults) {
 }
 
 /**
- * studios.mjs에 등록된 신뢰 채널들의 "최신작 + 역대 인기작"을 함께 수집합니다.
- * 날짜 제한이 없으므로, 예전 대표작이어도 채널의 인기작이면 후보에 포함됩니다.
+ * studios.mjs에 등록된 신뢰 채널들의 "최신 업로드"를 수집합니다.
+ * (역대 인기작=조회수 상위 수집은 하지 않음. 최신작 최우선 원칙)
  * @returns {Promise<Array<object>>}
  */
 export async function fetchYoutubeCandidates() {

@@ -82,6 +82,14 @@ async function handleDeleteClick(event, item) {
     return;
   }
 
+  // 삭제한 영상은 차단 목록에 기록해 다음 수집 때 다시 안 가져오게 함.
+  // (block_reference 함수가 아직 없더라도 삭제 자체는 성공했으므로 조용히 넘어감)
+  const { error: blockErr } = await getClient().rpc("block_reference", {
+    input_password: password,
+    p_source_url: item.source_url
+  });
+  if (blockErr) console.warn("[block] 차단 목록 기록 실패(삭제는 완료됨):", blockErr.message);
+
   event.currentTarget.closest(".board-item").remove();
 }
 

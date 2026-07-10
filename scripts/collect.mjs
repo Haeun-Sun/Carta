@@ -33,8 +33,13 @@ function videoKey(url) {
 async function main() {
   const supabase = getServiceClient();
 
+  // 이미 저장된 영상 + 관리자가 삭제해 차단한 영상을 모두 "본 것(seen)"으로 취급해
+  // 재수집을 막습니다. (blocked_references 테이블이 아직 없으면 조용히 건너뜀)
   const { data: existingUrls } = await supabase.from("references").select("source_url");
-  const seen = new Set((existingUrls ?? []).map((r) => videoKey(r.source_url)));
+  const { data: blockedUrls } = await supabase.from("blocked_references").select("source_url");
+  const seen = new Set(
+    [...(existingUrls ?? []), ...(blockedUrls ?? [])].map((r) => videoKey(r.source_url))
+  );
 
   const [studioYoutube, studioVimeo, staffPicks, curationFeeds] = await Promise.all([
     fetchYoutubeCandidates(), // 큐레이션된 스튜디오 채널 - 최신작+역대 인기작 (신뢰 소스)
